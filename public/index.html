@@ -191,6 +191,8 @@
               this.INDEXDB_VERSION = 1;
               this.INDEXDB_STORE ="Users";
               this.ORIGIN_TITLE = "Firebase-Tutorial";
+              this.ulAddUserList = document.getElementById('ulAddUserList');
+              this.aConfirmInvite =document.getElementById('aConfirmInvite');
           }
 
           /**
@@ -207,7 +209,32 @@
               this.iBtnSend.addEventListener('click', this.saveMessages.bind(this));
               this.dvInputChat.addEventListener('paste', this.onPaste.bind(this));
               this.aBackBtn.addEventListener('click', this.onBackBtnClick.bind(this));
+              this.aConfirmInvite.addEventListener('click', this.onConfirmInviteClick.bind(this));
               this.auth.onAuthStateChanged(this.onAuthChange.bind(this));
+          }
+
+          /**
+           * 초대
+           */
+          FirebaseChat.prototype.onConfirmInviteClick = function(){
+              var arrInviteUserList = Array.prototype.slice.call(this.ulAddUserList.getElementsByClassName('blue-text'));
+              var arrInviteUserListLength = arrInviteUserList.length;
+              var arrInviteUserName = [];
+              var updates = {};
+              for(var i=0; i < arrInviteUserListLength; i++){
+                  var inviteUserUid = arrInviteUserList[i].getAttribute('data-targetUserUid');
+                  var inviteUserName = arrInviteUserList[i].getAttribute('data-username') + '님';
+                  updates['RoomUsers/'+ this.roomId +'/'+ inviteUserUid] = true;
+                  arrInviteUserList[i].outerHTML = '';
+                  this.roomUserlist.push(inviteUserUid);
+                  this.roomUserName.push(inviteUserName);
+                  arrInviteUserName.push(inviteUserName);
+              }
+              this.roomUserlist.sort();
+              this.database.ref().update(updates);
+
+              //초대 메세지
+              this.saveMessages(arrInviteUserName.join() + '이 초대되었습니다.');
           }
 
           /**
@@ -246,7 +273,7 @@
            */
           FirebaseChat.prototype.saveMessages = function(){
               var user = this.auth.currentUser;
-              var msg = this.dvInputChat.innerHTML.trim();
+              var msg = inviteMessage ? inviteMessage : this.dvInputChat.innerHTML.trim();
 
               if(msg.length > 0){
                   this.dvInputChat.focus();
@@ -553,6 +580,32 @@
               }
               this.loadMessageList(roomId); //메세지 로드
               this.tabMessageList.click(); // 채팅방 화면 보이기
+              this.setAddUserList();
+          }
+
+          /**
+           * 유저 초대 팝업 모달 창 셋팅
+           */
+          FirebaseChat.prototype.setAddUserList = function(){
+            this.ulAddUserList.innerHTML =  this.ulUserList.innerHTML
+            var arrAddUserList = Array.prototype.slice.call(this.ulAddUserList.getElementsByTagName('li'));
+            var cbArrayForEach = function(item){
+                var itemUserUid = item.getAttribute('data-targetUserUid');
+                if(this.roomUserlist.indexOf(itemUserUid) === -1){
+                    item.getElementsByClassName('done')[0].classList.remove('hiddendiv');
+                    item.addEventListener('click',function(){
+                        if(Array.prototype.slice.call(this.classList).indexOf('blue-text') == -1){
+                            this.classList.add('blue-text');
+                        }else{
+                            this.classList.remove('blue-text');
+                        }
+                    });
+                }else{
+                    item.parentNode.removeChild(item);
+                }
+
+            }
+            arrAddUserList.forEach(cbArrayForEach.bind(this));
           }
 
           /**
