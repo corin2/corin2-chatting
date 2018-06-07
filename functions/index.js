@@ -62,7 +62,7 @@ exports.sendNotification = functions.database.ref('Messages/{roomId}/{messageId}
                         notification: {
                             title: sendUserName,
                             body: sendMsg,
-                            click_action :`https://corin2-chatting.firebaseapp.com/?roomId=${roomId}`, //
+                            click_action :`http://corin2-chat.firebaseapp.com/?roomId=${roomId}`,
                             icon: sendProfile
                         }
                     };

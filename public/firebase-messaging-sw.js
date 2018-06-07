@@ -2,7 +2,7 @@ importScripts('https://www.gstatic.com/firebasejs/4.6.1/firebase-app.js');
 importScripts('https://www.gstatic.com/firebasejs/4.6.1/firebase-messaging.js');
 
 firebase.initializeApp({
-    'messagingSenderId': '505041270501' //이곳은 자신의 프로젝트 설정 => 클라우드 메세징 => 발신자ID를 기입
+    'messagingSenderId': '760959643451' //이곳은 자신의 프로젝트 설정 => 클라우드 메세징 => 발신자ID를 기입
 });
 
 const messaging = firebase.messaging();

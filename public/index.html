@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Firebase-Tutorial</title>
+    <title>corin2-chat</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link type="text/css" rel="stylesheet" href="css/materialize.min.css"  media="screen,projection"/>
     <link rel="stylesheet" href="css/custom.css">
@@ -15,7 +15,7 @@
         <nav>
             <div class="nav-wrapper valign-wrapper">
                 <a href="#" id="aBackBtn" class="small material-icons left hiddendiv">arrow_back</a>
-                <span id="spTitle" class="brand-logo center">Firebase-Tutorial</span>
+                <span id="spTitle" class="brand-logo center">corin2-chat</span>
                 <a href="#dvAddUser" id="aInvite" class="small material-icons right hiddendiv modal-trigger">add</a>
             </div>
         </nav>
@@ -166,19 +166,20 @@
               this.auth = firebase.auth();
               this.liGoogleBtn = document.getElementById('liGoogleBtn');
               this.liFacebookBtn = document.getElementById('liFacebookBtn');
-              this.liEmailBtn = document.getElementById('liEmailBtn');
               this.liEmailJoin = document.getElementById('liEmailJoin');
               this.dvLogin  = document.getElementById('dvLogin');
               this.dvJoin = document.getElementById('dvJoin');
               this.liEmailJoinSubmit = document.getElementById('liEmailJoinSubmit');
+              this.liEmailBtn = document.getElementById('liEmailBtn');
               this.dvAuth = document.getElementById('dvAuth');
               this.liLogOut = document.getElementById('liLogOut');
+              this.INDEXDB_DB_NAME = "USER";
+              this.INDEXDB_VERSION = 1;
+              this.INDEXDB_STORE ="Users";
               this.ulUserList = document.getElementById('ulUserList');
               this.tabMessageList = document.getElementById('tabMessageList');
               this.aBackBtn = document.getElementById('aBackBtn');
               this.aInvite = document.getElementById('aInvite');
-              this.dvInputChat = document.getElementById('dvInputChat');
-              this.ulRoomList = document.getElementById('ulRoomList');
               this.MAKEID_CHAR = '@make@';
               this.DATETIME_CHAR = '@time@';
               this.spTitle = document.getElementById('spTitle');
@@ -188,9 +189,7 @@
               this.SPLIT_CHAR = '@spl@';
               this.ONE_VS_ONE = 'ONE_VS_ONE';
               this.MULTI = 'MULTI';
-              this.INDEXDB_DB_NAME = "USER";
-              this.INDEXDB_VERSION = 1;
-              this.INDEXDB_STORE ="Users";
+              this.ulRoomList = document.getElementById('ulRoomList');
               this.ORIGIN_TITLE = "Firebase-Tutorial";
               this.ulAddUserList = document.getElementById('ulAddUserList');
               this.aConfirmInvite =document.getElementById('aConfirmInvite');
@@ -200,27 +199,7 @@
           }
 
           /**
-           * 초기 이벤트 바인딩
-           */
-          FirebaseChat.prototype.initEvent = function(){
-              this.liGoogleBtn.addEventListener('click', this.onGoogleBtnClick.bind(this));
-              this.liFacebookBtn.addEventListener('click', this.onFacebookBtnClick.bind(this));
-              this.liEmailBtn.addEventListener('click', this.onEmailBtnClick.bind(this));
-              this.liEmailJoin.addEventListener('click', this.displayEmailJoin.bind(this));
-              this.liEmailJoinSubmit.addEventListener('click', this.createEmailUser.bind(this));
-              this.liLogOut.addEventListener('click', this.logOut.bind(this));
-              this.dvInputChat.addEventListener('keydown', this.onEnterKey.bind(this));
-              this.iBtnSend.addEventListener('click', this.saveMessages.bind(this));
-              this.dvInputChat.addEventListener('paste', this.onPaste.bind(this));
-              this.aBackBtn.addEventListener('click', this.onBackBtnClick.bind(this));
-              this.aConfirmInvite.addEventListener('click', this.onConfirmInviteClick.bind(this));
-              this.iBtnAttach.addEventListener('click', this.onBtnAttachClick.bind(this));
-              this.attachFile.addEventListener('change', this.onAttachFile.bind(this));
-              this.auth.onAuthStateChanged(this.onAuthChange.bind(this));
-          }
-
-          /**
-           * Cloud Messaging 알림 권한
+           * Cloud Messaging
            */
           FirebaseChat.prototype.setCloudMessaging = function () {
               //메세징
@@ -236,6 +215,27 @@
                   .catch(function(e){
                       console.log('메세징 권한 획득 중 에러', e);
                   });
+          }
+
+
+          /**
+           * 초기 이벤트 바인딩
+           */
+          FirebaseChat.prototype.initEvent = function(){
+              this.liGoogleBtn.addEventListener('click', this.onGoogleBtnClick.bind(this));
+              this.auth.onAuthStateChanged(this.onAuthChange.bind(this));
+              this.liFacebookBtn.addEventListener('click', this.onFacebookBtnClick.bind(this));
+              this.liEmailJoin.addEventListener('click', this.displayEmailJoin.bind(this));
+              this.liEmailJoinSubmit.addEventListener('click', this.createEmailUser.bind(this));
+              this.liEmailBtn.addEventListener('click', this.onEmailBtnClick.bind(this));
+              this.liLogOut.addEventListener('click', this.logOut.bind(this));
+              this.dvInputChat.addEventListener('keydown', this.onEnterKey.bind(this));
+              this.iBtnSend.addEventListener('click', this.saveMessages.bind(this));
+              this.dvInputChat.addEventListener("paste", this.onPaste.bind(this));
+              this.aBackBtn.addEventListener('click', this.onBackBtnClick.bind(this));
+              this.aConfirmInvite.addEventListener('click', this.onConfirmInviteClick.bind(this));
+              this.iBtnAttach.addEventListener('click', this.onBtnAttachClick.bind(this));
+              this.attachFile.addEventListener('change', this.onAttachFile.bind(this));
           }
 
           /**
@@ -278,69 +278,15 @@
                   //files 리셋
                   event.target.value='';
               }
-              //프로그레스바
+
+//프로그레스바
               uploadTask.on('state_changed', cbProgress.bind(this) , cbError.bind(this), cbComplete.bind(this));
-          }
-
-          /**
-           * 초대
-           */
-          FirebaseChat.prototype.onConfirmInviteClick = function(){
-              var arrInviteUserList = Array.prototype.slice.call(this.ulAddUserList.getElementsByClassName('blue-text'));
-              var arrInviteUserListLength = arrInviteUserList.length;
-              var arrInviteUserName = [];
-              var updates = {};
-              for(var i=0; i < arrInviteUserListLength; i++){
-                  var inviteUserUid = arrInviteUserList[i].getAttribute('data-targetUserUid');
-                  var inviteUserName = arrInviteUserList[i].getAttribute('data-username') + '님';
-                  updates['RoomUsers/'+ this.roomId +'/'+ inviteUserUid] = true;
-                  arrInviteUserList[i].outerHTML = '';
-                  this.roomUserlist.push(inviteUserUid);
-                  this.roomUserName.push(inviteUserName);
-                  arrInviteUserName.push(inviteUserName);
-              }
-              this.roomUserlist.sort();
-              this.database.ref().update(updates);
-
-              //초대 메세지
-              this.saveMessages(arrInviteUserName.join() + '이 초대되었습니다.');
-          }
-
-          /**
-           * 백버튼 클릭
-           */
-          FirebaseChat.prototype.onBackBtnClick = function(){
-              this.isOpenRoom = false;
-              this.aBackBtn.classList.add('hiddendiv');
-              this.aInvite.classList.add('hiddendiv');
-              document.getElementById(this.roomFlag).click();
-              this.spTitle.innerText = this.ORIGIN_TITLE;
-              this.ulMessageList.innerHTML='';
-          }
-
-          /**
-           * 복사 후 붙여넣기 시에 실행
-           */
-          FirebaseChat.prototype.onPaste = function(e){
-              e.preventDefault();
-              var text = e.clipboardData.getData("text/plain");
-              document.execCommand("insertText", false, text);
-          }
-
-          /**
-           * 메세지 엔터키 클릭
-           */
-          FirebaseChat.prototype.onEnterKey = function(e){
-              if(e.keyCode === 13){ //엔터키 키코드가 입력이 되면
-                  e.preventDefault();
-                  this.saveMessages();
-              }
           }
 
           /**
            * 메세지 전송
            */
-          FirebaseChat.prototype.saveMessages = function(){
+          FirebaseChat.prototype.saveMessages = function(inviteMessage, downloadURL, fileName){
               var user = this.auth.currentUser;
               var msg = this.dvInputChat.innerHTML.trim();
               //초대메세지
@@ -359,6 +305,7 @@
                   var multiUpdates = {};
                   var messageRefKey = this.messageRef.push().key; // 메세지 키값 구하기
                   var convertMsg = downloadURL ? msg : FirebaseChat.convertMsg(msg); //다운로드 URL일 경우 convert하지 않음
+
 
                   if(this.ulMessageList.getElementsByTagName('li').length === 0){ //메세지 처음 입력 하는 경우
                       var roomUserlistLength =this.roomUserlist.length;
@@ -404,79 +351,88 @@
           }
 
           /**
-           *  메세지에 태그 입력시 변경하기
+           * 초대
            */
-          FirebaseChat.convertMsg = function(html){
-              var tmp = document.createElement("DIV");
-              tmp.innerHTML = html;
-              return tmp.textContent || tmp.innerText || "";
+          FirebaseChat.prototype.onConfirmInviteClick = function(){
+              var arrInviteUserList = Array.prototype.slice.call(this.ulAddUserList.getElementsByClassName('blue-text'));
+              var arrInviteUserListLength = arrInviteUserList.length;
+              var arrInviteUserName = [];
+              var updates = {};
+              for(var i=0; i < arrInviteUserListLength; i++){
+                  var inviteUserUid = arrInviteUserList[i].getAttribute('data-targetUserUid');
+                  var inviteUserName = arrInviteUserList[i].getAttribute('data-username') + '님';
+                  updates['RoomUsers/'+ this.roomId +'/'+ inviteUserUid] = true;
+                  arrInviteUserList[i].outerHTML = '';
+                  this.roomUserlist.push(inviteUserUid);
+                  this.roomUserName.push(inviteUserName);
+                  arrInviteUserName.push(inviteUserName);
+              }
+              this.roomUserlist.sort();
+              this.database.ref().update(updates);
+
+              //초대 메세지
+              this.saveMessages(arrInviteUserName.join() + '이 초대되었습니다.');
+          }
+
+
+
+          /**
+           * 챗방 오픈 , 메세지 로드 및 AddUserList
+           */
+          FirebaseChat.prototype.openChatRoom = function(roomId, roomTitle){ // 파라미터 추가
+              this.isOpenRoom = true; // 방이 열린 상태인지 확인하는 플래그 값
+              if(roomTitle){  //상단 타이틀 변경
+                  this.spTitle.innerHTML = this.roomTitle;
+              }
+              this.loadMessageList(roomId); //메세지 로드
+              this.tabMessageList.click();
+              this.setAddUserList();
           }
 
           /**
-           * User데이터를 IndexedDB에 저장 및 데이터 변경
+           * 유저 초대 팝업 모달 창 셋팅
            */
-          FirebaseChat.prototype.saveUserAtIndexedDB = function(user, userName, isSave){
-              if(indexedDB){
-                  var request = indexedDB.open(this.INDEXDB_DB_NAME , this.INDEXDB_VERSION); // 데이터베이스 접근 요청
-                  var objectName = this.INDEXDB_STORE
-                  request.onupgradeneeded = function(){  // 데이터 베이스 생성 또는 버전 업그레이드 시 수행
-                      var db = request.result; //데이터 베이스 객체
-                      var store  = db.createObjectStore(objectName, {keyPath :"uid"}); // 테이블에 해당하는 Object 생성 및 키값 설정
-                  }
-                  request.onsuccess = function() {  // 데이터베이스 접근 요청이 성공 시
-                      var db = request.result;
-                      var tx = db.transaction(objectName, "readwrite"); //읽기쓰기 권한으로 트랜잭션을 얻음
-                      var store = tx.objectStore(objectName);
+          FirebaseChat.prototype.setAddUserList = function(){
+            this.ulAddUserList.innerHTML =  this.ulUserList.innerHTML
+            var arrAddUserList = Array.prototype.slice.call(this.ulAddUserList.getElementsByTagName('li'));
+            var cbArrayForEach = function(item){
+                var itemUserUid = item.getAttribute('data-targetUserUid');
+                if(this.roomUserlist.indexOf(itemUserUid) === -1){
+                    item.getElementsByClassName('done')[0].classList.remove('hiddendiv');
+                    item.addEventListener('click',function(){
+                        if(Array.prototype.slice.call(this.classList).indexOf('blue-text') == -1){
+                            this.classList.add('blue-text');
+                        }else{
+                            this.classList.remove('blue-text');
+                        }
+                    });
+                }else{
+                    item.parentNode.removeChild(item);
+                }
 
-                      store.get(user.uid).onsuccess = function(event){  //user.uid 기준으로 IndexedDB 데이터를 읽어온다
-                          var data = event.target.result;
-                          console.log('IndexedDB query 결과 : ', data);
-                          console.log('saveUserAtIndexedDB isSave 파라미터', isSave);
-                          if(!data){  //데이터가 없으면 저장
-                              store.put({
-                                  uid: user.uid
-                                  , email: user.email
-                                  , photoURL : user.photoURL ? user.photoURL : ''
-                                  , displayName : userName ? userName : user.displayName
-                                  , isSave : false
-                              });
-                          }
-
-                          if(data && isSave){  // 데이터가 존재하고 isSave 파라미터 true이면 데이터를 업데이트
-                              store.put({
-                                  uid: user.uid
-                                  , email: user.email
-                                  , photoURL : user.photoURL ? user.photoURL : ''
-                                  , displayName : userName ? userName : user.displayName
-                                  , isSave : true
-                              });
-                          }
-                      }
-                      tx.oncomplete = function() {
-                          console.log('IndexedDB 트랜잭션 완료')
-                          db.close();
-                      };
-                  }
-              }
+            }
+            arrAddUserList.forEach(cbArrayForEach.bind(this));
           }
+
+
 
           /**
-           * 인증 정보가 변화 되었을 시에 변화
+           * 백버튼 클릭
            */
-          FirebaseChat.prototype.onAuthChange = function(user){
-              if (user) {
-                  console.log('user로그인 : ',JSON.stringify(user));
-                  this.setLogin();
-              } else {
-                  console.log('로그아웃');
-                  this.setLogOut();
-              }
+          FirebaseChat.prototype.onBackBtnClick = function(){
+              this.isOpenRoom = false;
+              this.aBackBtn.classList.add('hiddendiv');
+              this.aInvite.classList.add('hiddendiv');
+              document.getElementById(this.roomFlag).click();
+              this.spTitle.innerText = this.ORIGIN_TITLE;
+              this.ulMessageList.innerHTML='';
           }
+
 
           /**
            *  로그인 후 세팅
            */
-          FirebaseChat.prototype.setLogin = function(){
+          FirebaseChat.prototype.setLogin = function(user){  //user 파라미터 추
               this.database = firebase.database(); // 인증 받은 후 초기화 하여야 합니다. 필드 변수에 서 할당하면 인증 받기전에 할당이라 에러발생
               this.database.goOnline(); // 데이터베이스를 명시적으로 온라인
               this.dvAuth.style.display = 'none';
@@ -525,44 +481,6 @@
           }
 
           /**
-           *  첫번째 탭 유저리스트 호출
-           */
-          FirebaseChat.prototype.loadUserList = function(){
-              this.userTemplate = document.getElementById('templateUserList').innerHTML;
-              var userRef = this.database.ref('Users');
-              userRef.off();
-              userRef.orderByChild("userName").once('value', this.getUserList.bind(this));
-              var cbCompleteUserList = function(){
-                  this.loadOnlineStatus();
-              }
-              userRef.orderByChild("userName")
-                  .once('value', this.getUserList.bind(this))
-                  .then(cbCompleteUserList.bind(this));
-          }
-
-          /**
-           * 유저의 온라인 여부 감지하여 유저리스트에 표시 해주는 기능
-           */
-          FirebaseChat.prototype.loadOnlineStatus = function(){
-              var usersConnectionRef = this.database.ref('UsersConnection');
-              usersConnectionRef.off();
-              var cbUserConnection = function(data){
-                  var connKey =data.key;
-                  var connValue = data.val();
-                  var onlineIcon = document.querySelector('#li' + connKey+' .mood');
-                  if(onlineIcon != null){
-                      if(connValue.connection === true){
-                          onlineIcon.classList.remove('hiddendiv');
-                      }else{
-                          onlineIcon.classList.add('hiddendiv');
-                      }
-                  }
-              }
-              usersConnectionRef.on('child_added', cbUserConnection.bind(this));
-              usersConnectionRef.on('child_changed', cbUserConnection.bind(this));
-          }
-
-          /**
            *  두번째 탭 채팅방 목록리스트 호출
            */
           FirebaseChat.prototype.loadRoomList = function(){
@@ -584,7 +502,7 @@
                   var eachRoomTitle = arrRoomUserName.length > 1 ?
                       arrRoomUserName[0] + " 외 " + (arrRoomUserName.length - 1) + "명" : arrRoomUserName[0] +'님';
 
-                  if(data.key === this.roomId && this.isOpenRoom){ //데이터 키가 현재 방ID와 같고 채팅방이 열려있는 경우에 현재 메세지 상단 제목을 갱신해줍니다.
+                  if(data.key === this.roomId && this.isOpenRoom){ //현재 메세지 상단 제목을 갱신해준다.
                       this.spTitle.innerHTML  = eachRoomTitle;
                   }
 
@@ -593,13 +511,6 @@
                       roomUserlist: val.roomUserlist,
                       roomType : val.roomType, roomOneVSOneTarget : val.roomOneVSOneTarget,
                       datetime :FirebaseChat.timestampToTimeForRoomList(val.timestamp)}));
-
-                  // 채팅방을 로드 후 url에 roomId파라미터가 있으면 채팅방을 클릭한다.
-                  var paramData = FirebaseChat.getParam('roomId');
-                  if(paramData && paramData.length > 0){
-                      document.getElementById('liRoom' + paramData).click();
-                      history.replaceState('','', '/');
-                  }
               }
               snapshot.forEach(cbDisplayRoomList.bind(this));
               this.ulRoomList.innerHTML = arrRoomListHtml.reverse().join(''); // 역순 정렬
@@ -611,6 +522,13 @@
               var arrLiListLength = arrLiList.length;
               for(var i=0; i < arrLiListLength; i++){
                   arrLiList[i].addEventListener('click', this.onRoomListClick.bind(this));
+              }
+
+              // 채팅방을 로드 후 url에 roomId파라미터가 있으면 채팅방을 클릭한다.
+              var paramData = FirebaseChat.getParam('roomId');
+              if(paramData && paramData.length > 0){
+                  document.getElementById('liRoom' + paramData).click();
+                  history.replaceState('','', '/');
               }
           }
 
@@ -685,6 +603,38 @@
               return result;
           }
 
+
+
+          /**
+           * 복사 후 붙여넣기 시에 실행
+           */
+          FirebaseChat.prototype.onPaste = function(e){
+              e.preventDefault();
+              var text = e.clipboardData.getData("text/plain");
+              document.execCommand("insertText", false, text);
+          }
+
+          /**
+           * 메세지 엔터키 클릭
+           */
+          FirebaseChat.prototype.onEnterKey = function(e){
+              if(e.keyCode === 13){ //엔터키 키코드가 입력이 되면
+                  e.preventDefault();
+                  this.saveMessages();
+              }
+          }
+
+
+
+          /**
+           *  메세지에 태그 입력시 변경하기
+           */
+          FirebaseChat.convertMsg = function(html){
+              var tmp = document.createElement("DIV");
+              tmp.innerHTML = html;
+              return tmp.textContent || tmp.innerText || "";
+          }
+
           /**
            * 유저리스트 클릭
            */
@@ -708,82 +658,7 @@
               }
           }
 
-          /**
-          * loadUserList 에서 데이터를 받아 왔을 때
-          */
-         FirebaseChat.prototype.getUserList  =  function(snapshot) {
-             var userListHtml = '';
-             var cbDisplayUserList = function(data){
-                 var val = data.val();
-                 if(data.key !== this.auth.currentUser.uid){
-                     userListHtml += _.template(this.userTemplate)({targetUserUid : data.key, profileImg : val.profileImg, userName : val.userName});
-                 }
-             }
-             snapshot.forEach(cbDisplayUserList.bind(this));
-             this.ulUserList.innerHTML = userListHtml;
-             /**
-               *  유저리스트 클릭 이벤트 적용
-               */
-              var arrLiList = this.ulUserList.getElementsByTagName('li');
-              var arrLiListLength = arrLiList.length;
-              for(var i=0; i < arrLiListLength; i++){
-                  arrLiList[i].addEventListener('click', this.onUserListClick.bind(this));
-              }
-         }
 
-         /**
-           * 유저리스트 클릭
-           */
-          FirebaseChat.prototype.onUserListClick = function(event){
-              this.aBackBtn.classList.remove('hiddendiv'); // 백버튼 노출
-              this.aInvite.classList.remove('hiddendiv'); // 초대 버튼 노툴
-              this.openChatRoom();
-              var targetUserUid = event.currentTarget.getAttribute('data-targetUserUid');
-              var targetUserName = event.currentTarget.getAttribute('data-username');
-              this.roomTitle = targetUserName+'님';
-              this.roomUserlist = [targetUserUid, this.auth.currentUser.uid]; // 챗방 유저리스트
-              this.roomUserName = [targetUserName, this.auth.currentUser.displayName] // 챗방 유저 이름
-              this.roomId = this.MAKEID_CHAR + this.auth.currentUser.uid + this.DATETIME_CHAR + FirebaseChat.yyyyMMddHHmmsss();
-              this.openChatRoom(this.roomId, this.roomTitle);  // 파라미터 추가
-          }
-
-          /**
-           * 챗방 오픈 , 메세지 로드 및 AddUserList
-           */
-          FirebaseChat.prototype.openChatRoom = function(){
-              this.isOpenRoom = true;  // 방이 열린 상태인지 확인하는 플래그 값
-              if(roomTitle){  //상단 타이틀 변경
-                  this.spTitle.innerHTML = this.roomTitle;
-              }
-              this.loadMessageList(roomId); //메세지 로드
-              this.tabMessageList.click(); // 채팅방 화면 보이기
-              this.setAddUserList();
-          }
-
-          /**
-           * 유저 초대 팝업 모달 창 셋팅
-           */
-          FirebaseChat.prototype.setAddUserList = function(){
-            this.ulAddUserList.innerHTML =  this.ulUserList.innerHTML;
-            var arrAddUserList = Array.prototype.slice.call(this.ulAddUserList.getElementsByTagName('li'));
-            var cbArrayForEach = function(item){
-                var itemUserUid = item.getAttribute('data-targetUserUid');
-                if(this.roomUserlist.indexOf(itemUserUid) === -1){
-                    item.getElementsByClassName('done')[0].classList.remove('hiddendiv');
-                    item.addEventListener('click',function(){
-                        if(Array.prototype.slice.call(this.classList).indexOf('blue-text') == -1){
-                            this.classList.add('blue-text');
-                        }else{
-                            this.classList.remove('blue-text');
-                        }
-                    });
-                }else{
-                    item.parentNode.removeChild(item);
-                }
-
-            }
-            arrAddUserList.forEach(cbArrayForEach.bind(this));
-          }
 
           /**
            * 메세지 로드
@@ -800,7 +675,6 @@
                   var cbDisplayMessages = function(data) {
                       var messageHtml = '';
                       var val = data.val();
-                      console.log('timestamp : ', val.timestamp);
                       messageHtml = _.template(messageTemplate)({
                           key : data.key
                           , profileImg : val.profileImg
@@ -864,6 +738,234 @@
               return n > 9 ? "" + n: "0" + n;
           }
 
+
+          /**
+           * loadUserList 에서 데이터를 받아 왔을 때
+           */
+          FirebaseChat.prototype.getUserList  =  function(snapshot) {
+              var userListHtml = '';
+              var cbDisplayUserList = function(data){
+                  var val = data.val();
+                  if(data.key !== this.auth.currentUser.uid){
+                      userListHtml += _.template(this.userTemplate)({targetUserUid : data.key, profileImg : val.profileImg, userName : val.userName});
+                  }
+              }
+              snapshot.forEach(cbDisplayUserList.bind(this));
+              this.ulUserList.innerHTML = userListHtml;
+
+              /**
+               *  유저리스트 클릭 이벤트 적용
+               */
+              var arrLiList = this.ulUserList.getElementsByTagName('li')
+              var arrLiListLength = arrLiList.length;
+              for(var i=0; i < arrLiListLength; i++){
+                  arrLiList[i].addEventListener('click', this.onUserListClick.bind(this));
+              }
+
+          }
+
+
+
+
+
+          /**
+           *  첫번째 탭 유저리스트 호출
+           */
+          FirebaseChat.prototype.loadUserList = function(){
+              this.userTemplate = document.getElementById('templateUserList').innerHTML;
+              var userRef = this.database.ref('Users');
+              userRef.off();
+              var cbCompleteUserList = function(){
+                  this.loadOnlineStatus();
+              }
+              userRef.orderByChild("userName")
+                  .once('value', this.getUserList.bind(this))
+                  .then(cbCompleteUserList.bind(this));
+          }
+
+          /**
+           * 유저의 온라인 여부 감지하여 유저리스트에 표시 해주는 기능
+           */
+          FirebaseChat.prototype.loadOnlineStatus = function(){
+              var usersConnectionRef = this.database.ref('UsersConnection');
+              usersConnectionRef.off();
+              var cbUserConnection = function(data){
+
+                  var connKey =data.key;
+                  var connValue = data.val();
+                  var onlineIcon = document.querySelector('#li' + connKey+' .mood');
+                  if(onlineIcon != null){
+                      if(connValue.connection === true){
+                          onlineIcon.classList.remove('hiddendiv');
+                      }else{
+                          onlineIcon.classList.add('hiddendiv');
+                      }
+                  }
+              }
+              usersConnectionRef.on('child_added', cbUserConnection.bind(this));
+              usersConnectionRef.on('child_changed', cbUserConnection.bind(this));
+          }
+
+
+
+
+
+          /**
+           * User데이터를 IndexedDB에 저장 및 데이터 변경
+           */
+          FirebaseChat.prototype.saveUserAtIndexedDB = function(user, userName, isSave){
+              if(indexedDB){
+                  var request = indexedDB.open(this.INDEXDB_DB_NAME , this.INDEXDB_VERSION); // 데이터베이스 접근 요청
+                  var objectName = this.INDEXDB_STORE
+                  request.onupgradeneeded = function(){  // 데이터 베이스 생성 또는 버전 업그레이드 시 수행
+                      var db = request.result; //데이터 베이스 객체
+                      var store  = db.createObjectStore(objectName, {keyPath :"uid"}); // 테이블에 해당하는 Object 생성 및 키값 설정
+                  }
+                  request.onsuccess = function() {  // 데이터베이스 접근 요청이 성공 시
+                      var db = request.result;
+                      var tx = db.transaction(objectName, "readwrite"); //읽기쓰기 권한으로 트랜잭션을 얻음
+                      var store = tx.objectStore(objectName);
+
+                      store.get(user.uid).onsuccess = function(event){  //user.uid 기준으로 IndexedDB 데이터를 읽어온다
+                          var data = event.target.result;
+                          console.log('IndexedDB query 결과 : ', data);
+                          console.log('saveUserAtIndexedDB isSave 파라미터', isSave);
+                          if(!data){  //데이터가 없으면 저장
+                              store.put({
+                                  uid: user.uid
+                                  , email: user.email
+                                  , photoURL : user.photoURL ? user.photoURL : ''
+                                  , displayName : userName ? userName : user.displayName
+                                  , isSave : false
+                              });
+                          }
+
+                          if(data && isSave){  // 데이터가 존재하고 isSave 파라미터 true이면 데이터를 업데이트
+                              store.put({
+                                  uid: user.uid
+                                  , email: user.email
+                                  , photoURL : user.photoURL ? user.photoURL : ''
+                                  , displayName : userName ? userName : user.displayName
+                                  , isSave : true
+                              });
+                          }
+                      }
+                      tx.oncomplete = function() {
+                          console.log('IndexedDB 트랜잭션 완료')
+                          db.close();
+                      };
+                  }
+              }
+          }
+
+          /**
+           * 이메일로 가입 처리
+           */
+          FirebaseChat.prototype.createEmailUser = function(){
+              var userName = document.getElementById('joinUserName').value.trim();
+              var email = document.getElementById('joinUserEmail').value.trim();
+              var password = document.getElementById('joinPassword').value.trim();
+              var rePassword =document.getElementById('joinRePassword').value.trim();
+              // 유효성 검증
+              if(this.validateJoinForm(email, password, rePassword)){
+                  var cbCreateUserWithEmail = function(user){
+                      this.saveUserAtIndexedDB(user ,userName, false); //추가 메소드
+                      console.log('이메일 가입 성공 : ', JSON.stringify(user));
+                      //프로필 업데이트 - 이메일 가입시 유저이름 파라미터를 보내지 않으므로 가입 성공 후 처리
+                      user.updateProfile({
+                          displayName: this.userName,
+                      }).then(function() {
+                          console.log('userName 업데이트 성공')
+                      }).catch(function(error) {
+                          console.error('userName 업데이트 실패 : ', error );
+                      });
+
+                      //인증 메일 발송
+                      this.auth.useDeviceLanguage(); // 이메일 기기언어로 세팅
+                      user.sendEmailVerification().then(function() {
+                          console.log('인증메일 발송 성공')
+                      }).catch(function(error) {
+                          console.error('인증메일 발송 에러', error);
+                      });
+
+                  }
+                  var cbAfterPersistence = function(){
+                      return this.auth.createUserWithEmailAndPassword(email, password)
+                          .then(cbCreateUserWithEmail.bind(this))
+                          .catch(function(error) {
+                              console.error('이메일 가입시 에러 : ', error);
+                              switch(error.code){
+                                  case "auth/email-already-in-use":
+                                      alert('이미 사용중인 이메일 입니다.');
+                                      break;
+                                  case "auth/invalid-email":
+                                      alert('유효하지 않은 메일입니다');
+                                      break;
+                                  case "auth/operation-not-allowed":
+                                      alert('이메일 가입이 중지되었습니다.');
+                                      break;
+                                  case "auth/weak-password":
+                                      alert("비밀번호를 6자리 이상 필요합니다");
+                                      break;
+
+                              }
+                          });
+                  }
+
+                  this.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+                      .then(cbAfterPersistence.bind(this))
+                      .catch(function(error) {
+                          console.error('인증 상태 설정 중 에러 발생' , error);
+                      });
+
+
+              }
+          }
+
+          /**
+           * 지속성 설정 후 sign-in 팝업창
+           */
+          FirebaseChat.prototype.signInWithPopup = function(provider) {
+              var cbSignIn = function(result){
+                  console.log('로그인 성공')
+                  this.saveUserAtIndexedDB(result.user, null , false);
+              }
+
+              return  this.auth.signInWithPopup(provider).then(cbSignIn.bind(this)).catch(function(error) {
+                  alert('로그인에 실패하였습니다');
+                  console.error('로그인 에러',error);
+              });
+          }
+
+
+
+          /**
+           * 로그아웃
+           */
+          FirebaseChat.prototype.logOut = function(){
+              if(confirm('로그아웃 하시겠습니까?')){
+                  if(this.database){
+                      this.database.goOffline(); // 데이터 베이스를 명시적으로 오프라인
+                  }
+                  this.auth.signOut();
+              }
+          }
+
+          /**
+           * 인증 정보가 변화 되었을 시에 변화
+           */
+          FirebaseChat.prototype.onAuthChange = function(user){
+              if (user) {
+                  console.log('user로그인 : ',JSON.stringify(user));
+                  this.setLogin(user); //파라미터 추가
+              } else {
+                  console.log('로그아웃');
+                  this.setLogOut();
+              }
+          }
+
+
+
           /**
            * 신규 User를 IndexedDB에서 체크 후 저장
            */
@@ -890,7 +992,7 @@
                       };
                   }
               }catch(e){
-                  this.saveUserAtRealDB(user); //indexDB 확인에 실패 하면 Reatime Database 조회 후
+                  this.saveUserAtRealDB(user)
               }
           }
 
@@ -918,18 +1020,6 @@
           }
 
           /**
-           * 로그아웃
-           */
-          FirebaseChat.prototype.logOut = function(){
-              if(confirm('로그아웃 하시겠습니까?')){
-                  if(this.database){
-                      this.database.goOffline(); // 데이터 베이스를 명시적으로 오프라인
-                  }
-                  this.auth.signOut();
-              }
-          }
-
-          /**
            * 로그아웃 되어 onAuthStateChange 에 감지 된 후 동작
            */
           FirebaseChat.prototype.setLogOut = function(){
@@ -938,125 +1028,7 @@
               this.dvLogin.style.display = 'block';
           }
 
-          /**
-           * 이메일 가입 폼 표시
-           */
-          FirebaseChat.prototype.displayEmailJoin = function(){
-              this.dvLogin.style.display='none';
-              this.dvJoin.style.display='block';
-          }
 
-          /**
-           * 이메일로 가입 처리
-           */
-          FirebaseChat.prototype.createEmailUser = function(){
-              var userName = document.getElementById('joinUserName').value.trim();
-              var email = document.getElementById('joinUserEmail').value.trim();
-              var password = document.getElementById('joinPassword').value.trim();
-              var rePassword =document.getElementById('joinRePassword').value.trim();
-              // 유효성 검증
-              if(this.validateJoinForm(email, password, rePassword)){
-                  var cbCreateUserWithEmail = function(user){
-                      this.saveUserAtIndexedDB(user ,userName, false); //추가 메소드
-                      console.log('이메일 가입 성공 : ', JSON.stringify(user));
-                      //프로필 업데이트 - 이메일 가입시 유저이름 파라미터를 보내지 않으므로 가입 성공 후 처리
-                      user.updateProfile({
-                          displayName: this.userName,
-                      }).then(function() {
-                          console.log('userName 업데이트 성공')
-                      }).catch(function(error) {
-                          console.error('userName 업데이트 실패 : ', error );
-                      });
-                      //인증 메일 발송
-                      this.auth.useDeviceLanguage(); // 이메일 기기언어로 세팅
-                      user.sendEmailVerification().then(function() {
-                          console.log('인증메일 발송 성공')
-                      }).catch(function(error) {
-                          console.error('인증메일 발송 에러', error);
-                      });
-                  }
-                  var cbAfterPersistence = function(){
-                      return this.auth.createUserWithEmailAndPassword(email, password)
-                          .then(cbCreateUserWithEmail.bind(this))
-                          .catch(function(error) {
-                              console.error('이메일 가입시 에러 : ', error);
-                              switch(error.code){
-                                  case "auth/email-already-in-use":
-                                      alert('이미 사용중인 이메일 입니다.');
-                                      break;
-                                  case "auth/invalid-email":
-                                      alert('유효하지 않은 메일입니다')
-                                      break;
-                                  case "auth/operation-not-allowed":
-                                      alert('이메일 가입이 중지되었습니다.')
-                                      break;
-                                  case "auth/weak-password":
-                                      alert("비밀번호를 6자리 이상 필요합니다");
-                                      break;
-
-                              }
-                          });
-                  }
-
-                  this.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
-                      .then(cbAfterPersistence.bind(this))
-                      .catch(function(error) {
-                          console.error('인증 상태 설정 중 에러 발생' , error);
-                      });
-              }
-          }
-
-          /**
-           *  이메일 가입 폼에서 유효성 체크
-           */
-          FirebaseChat.prototype.validateJoinForm = function(email, password, rePassword){
-              //이메일 유효성 체크
-              if(!FirebaseChat.emailCheck(email)){
-                  alert("이메일 형식에 맞지 않습니다");
-                  return false;
-              }
-              //패스워드 동일 여부 체크
-              if(password !== rePassword){
-                  alert('패스워드가 동일하지 않습니다');
-                  return false
-              }
-
-              return true;
-          }
-
-          /**
-           * 이메일 형식 체크
-           */
-          FirebaseChat.emailCheck = function(mail){
-              if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(mail)) {
-                  return true;
-              }
-              return false;
-          }
-
-          /**
-           * Google 로그인 버튼 클릭
-           */
-           FirebaseChat.prototype.onGoogleBtnClick = function(){
-               var googleProvider = new firebase.auth.GoogleAuthProvider();
-               this.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
-                   .then(this.signInWithPopup.bind(this, googleProvider))
-                   .catch(function(error) {
-                       console.error('인증 상태 설정 중 에러 발생' , error);
-                   });
-           }
-
-           /**
-           * 페이스북 로그인 버튼 클릭
-           */
-          FirebaseChat.prototype.onFacebookBtnClick = function(){
-              var facebookProvider = new firebase.auth.FacebookAuthProvider();
-              this.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
-                  .then(this.signInWithPopup.bind(this, facebookProvider))
-                  .catch(function(error) {
-                      console.error('인증 상태 설정 중 에러 발생' , error);
-                  });
-          }
 
           /***
            *  이메일 로그인 버튼 클릭
@@ -1094,33 +1066,70 @@
               }
           }
 
-           /**
-           * 지속성 설정 후 sign-in 팝업창
+
+
+          /**
+           *  이메일 가입 폼에서 유효성 체크
            */
-          FirebaseChat.prototype.signInWithPopup = function(provider) {
-              var cbSignIn = function(result){
-                  console.log('로그인 성공');
-                  this.saveUserAtIndexedDB(result.user, null , false);
+          FirebaseChat.prototype.validateJoinForm = function(email, password, rePassword){
+              //이메일 유효성 체크
+              if(!FirebaseChat.emailCheck(email)){
+                  alert("이메일 형식에 맞지 않습니다");
+                  return false;
+              }
+              //패스워드 동일 여부 체크
+              if(password !== rePassword){
+                  alert('패스워드가 동일하지 않습니다');
+                  return false
               }
 
-              return  this.auth.signInWithPopup(provider).then(cbSignIn.bind(this)).catch(function(error) {
-                  alert('로그인에 실패하였습니다');
-                  console.error('로그인 에러',error);
-              });
+              return true;
           }
 
           /**
-           * 인증 정보가 변화 되었을 시에 변화
+           * 이메일 형식 체크
            */
-          FirebaseChat.prototype.onAuthChange = function(user){
-              if (user) {
-                  console.log('user로그인 : ',JSON.stringify(user));
-                  this.setLogin(user); //파라미터 추가
-              } else {
-                  console.log('로그아웃')
-                  this.setLogOut();
+          FirebaseChat.emailCheck = function(mail){
+              if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(mail)) {
+                  return true;
               }
+              return false;
           }
+
+
+          /**
+           * 이메일 가입 폼 표시
+           */
+          FirebaseChat.prototype.displayEmailJoin = function(){
+              this.dvLogin.style.display='none';
+              this.dvJoin.style.display='block';
+          }
+
+          /**
+           * 페이스북 로그인 버튼 클릭
+           */
+          FirebaseChat.prototype.onFacebookBtnClick = function(){
+              var facebookProvider = new firebase.auth.FacebookAuthProvider();
+              this.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+                  .then(this.signInWithPopup.bind(this, facebookProvider))
+                  .catch(function(error) {
+                      console.error('인증 상태 설정 중 에러 발생' , error);
+                  });
+          }
+
+          /**
+           * Google 로그인 버튼 클릭
+           */
+          FirebaseChat.prototype.onGoogleBtnClick = function(){
+              var googleProvider = new firebase.auth.GoogleAuthProvider();
+              this.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+                  .then(this.signInWithPopup.bind(this, googleProvider))
+                  .catch(function(error) {
+                      console.error('인증 상태 설정 중 에러 발생' , error);
+                  });
+          }
+
+
 
           /**
            * Dom 로딩 후 동작
